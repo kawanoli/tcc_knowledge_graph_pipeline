@@ -1,0 +1,15 @@
+# requirements.txt
+# Instale com: pip install -r requirements.txt
+
+PyMuPDF>=1.23.0          # leitura de PDF
+spacy>=3.7.0             # NER
+gensim>=4.3.0            # Word2Vec
+networkx>=3.2            # grafos
+matplotlib>=3.8.0        # PNG
+pyvis>=0.3.2             # HTML interativo
+scikit-learn>=1.4.0      # KMeans, cosine_similarity, normalize
+numpy>=1.26.0
+
+# Modelos spaCy (execute após instalar spacy):
+# python -m spacy download pt_core_news_sm   # Português
+# python -m spacy download en_core_web_sm    # Inglês (troque em config.py)
