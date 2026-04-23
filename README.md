@@ -1,12 +1,10 @@
-# TCC Knowledge Graph Pipeline
+# Extrator de Conhecimento de TCCs
 
-Este repositório é um projeto de "Extrator de conhecimento" de TCCs; serve para que você consiga filtrar (e visualizar com grafos) uma série de N TCCs desejada, para se extrair as conexões mais relevantes (utilizando NER). Pode-se utilizar para extrair informações relevantes para o seu TCC (bem, eu particularmente uso para isso 😆), ou extrair informações relevantes sobre escolha de temas e etc.
+Este repositório contém um Extrator de Conhecimento de Trabalhos de Conclusão de Curso (TCCs). O objetivo é filtrar e visualizar, através de grafos, uma série de trabalhos desejados para extrair as conexões mais relevantes utilizando Reconhecimento de Entidades Nomeadas (NER).
 
-Extrai entidades de PDFs acadêmicos, treina Word2Vec sobre o corpus e gera
-um grafo de co-ocorrência semanticamente enriquecido para análise de temas,
-técnicas e conexões relevantes.
+Você pode utilizar esta ferramenta para extrair informações relevantes para a escrita do seu próprio TCC ou trabalhos (eu particularmente uso para isso 😆) ou para descobrir tendências e temas quentes em um conjunto de documentos acadêmicos.
 
-Este projeto foi construído propositalmente com uma arquitetura modular, para que se permita qualquer modificação de forma fácil, permitindo que todo o escopo do tema escolhido para se analisar os TCCs seja mudado com a maior facilidade possível.
+O pipeline extrai entidades de PDFs acadêmicos, treina um modelo Word2Vec sobre o corpus gerado e cria um grafo de co-ocorrência semanticamente enriquecido. Isso permite uma análise profunda de temas, técnicas e conexões relevantes. O projeto foi construído com uma arquitetura modular, permitindo que qualquer modificação ou mudança de escopo (tema) seja feita com a maior facilidade possível.
 
 ---
 
@@ -28,7 +26,18 @@ tcc_knowledge_graph_pipeline/
 
 ---
 
+## 📚 Base de Dados (TCCs Utilizados)
+
+Por uma questão de direitos autorais, optei por não subir os arquivos originais junto com o repositório. Entretanto, você pode baixar os TCCs que utilizei como base no link abaixo:
+
+* **[Download da base de TCCs (Google Drive)](https://drive.google.com/drive/folders/1ltCmrYt7LMXYEh6d7ywvBWVOw39ISGon?usp=sharing)**
+
+**Atenção:** Ao baixar ou clonar este repositório, lembre-se de criar a pasta chamada `tccs` (ela é essencial para o funcionamento do pipeline) na raiz do projeto (ou com outro nome, desde que alterado no arquivo `config.py`). Coloque todos os PDFs que deseja analisar dentro desta pasta antes de rodar o pipeline (caso sejam os que foram baixados do meu link do Drive, coloque todos eles dentro da pasta criada). Não se preocupe com a pasta `outputs` do final do pipeline, pois ela será criada automaticamente.
+
+
 ## 🏃 Como rodar o pipeline?
+
+Clonado o repositório, e criada e alimentada a pasta `tccs` (ou nome escolhido), podemos prosseguir para a execução de fato do pipeline.
 
 Para rodar nosso pipeline de processamento dos dados, temos duas opções de caminhos para seguir:
 
@@ -61,7 +70,10 @@ O mais prático e simples. Roda na máquina local.
 
 ### 🐳 Opção B: Container Docker (Recomendado para Testes mais Exigentes)
 
-Caso esteja usando Windows ou MacOS, precisaremos que o Docker Desktop esteja aberto.
+> [!IMPORTANTE]
+> Caso opte pela execução em container Docker e esteja em uma máquina com Windows ou macOS, lembre-se de **abrir o Docker Desktop em segundo plano**. Caso contrário, nem a criação da imagem nem a execução do pipeline funcionarão!
+
+O grande trunfo do Container Docker aqui é limitar o consumo de RAM e evitar travamentos na sua máquina 😉.
 
 Dentro desse repositório, já temos um dockerfile de construção da imagem, então podemos prosseguir direto com a criação da mesma:
 
@@ -79,7 +91,7 @@ docker run --rm \
   tcc-graph-pipeline     
 
 ```
-Essas flags permitem que o container tenha acesso ao seu repositório local, podendo editar e criar novos arquivos sem que eles fiquem presos dentro apenas do container. As flags de `memory` servem para limitar o consumo de RAM do container, que é o grande trunfo do uso do mesmo (evitar uma tela azul misteriosa no seu pc 😆).
+Essas flags permitem que o container tenha acesso ao seu repositório local, podendo editar e criar novos arquivos sem que eles fiquem presos dentro apenas do container. As flags de `memory` servem para limitar o consumo de RAM do container.
 
 ---
 
@@ -122,45 +134,52 @@ Para inglês, troque `modelo_spacy` por `"en_core_web_sm"` e baixe o modelo:
 python -m spacy download en_core_web_sm
 ```
 
----
+## 🧠Como a vetorização melhora a análise
 
-## Como a vetorização melhora a análise
+### O Problema com a Co-ocorrência Pura
+Dois nomes podem aparecer na mesma sentença de forma acidental. Por exemplo: *"O trabalho de **Silva** foi apresentado na **UFMG**"*. Isso geraria arestas ruidosas no grafo, conectando entidades sem relação semântica forte.
 
-### Problema com co-ocorrência pura
-Dois nomes podem aparecer na mesma sentença por acidente ("O trabalho de **Silva**
-foi apresentado na **UFMG**"), gerando arestas ruidosas no grafo.
+### A Solução: Peso Combinado
+Para resolver isso, cada aresta recebe um peso final que combina a frequência textual com a similaridade semântica:
 
-### Solução: peso combinado
-Cada aresta recebe um peso calculado como:
+$$peso\_final = \alpha \times cooc\_norm + \beta \times sim\_cosseno$$
 
-```
-peso_final = α × cooc_norm + β × sim_cosseno
-```
+* **cooc_norm:** Co-ocorrências normalizadas para o intervalo.
+* **sim_cosseno:** Similaridade entre os vetores Word2Vec das duas entidades.
+* $\alpha$ e $\beta$: Pesos configuráveis no arquivo `config.py`.
 
-Onde:
-- `cooc_norm` = co-ocorrências normalizadas para [0, 1]
-- `sim_cosseno` = similaridade entre vetores Word2Vec das entidades
-- `α`, `β` = configuráveis em `config.py` (padrão: 0.5 / 0.5)
+Entidades onde $sim\_cosseno < similaridade\_minima$ têm suas arestas sumariamente removidas, limpando o ruído do grafo.
 
-Entidades com `sim_cosseno < similaridade_minima` têm suas arestas removidas.
-
-### Clusters semânticos
-K-Means aplicado nos vetores das entidades agrupa automaticamente conceitos
-relacionados (ex.: cluster de técnicas de ML, cluster de instituições, etc.),
-independente do tema — basta trocar os PDFs.
+### Clusters Semânticos
+Aplicamos o algoritmo K-Means nos vetores das entidades para agrupar conceitos relacionados automaticamente (ex: um cluster de técnicas de ML, um cluster de instituições de ensino), independentemente do tema dos PDFs de entrada.
 
 ---
 
-## Ajuste fino
+## ⚙️ Configurações e Ajuste Fino
 
-Esses mesmos ajustes podem ser mexidos em `config.py`, caso queira "brincar" com algumas modificações de comportamento do pipeline, e ver o que irá resultar.
+Você pode adaptar completamente o comportamento do pipeline editando **apenas** o arquivo `config.py`.
 
-| Parâmetro           | Efeito                                              |
-|---------------------|-----------------------------------------------------|
-| `w2v_vector_size`   | Vetores maiores = mais nuance, mais memória         |
-| `w2v_window`        | Janela maior = contexto mais amplo                  |
-| `cooc_threshold`    | Aumentar = grafo mais esparso, menos ruído          |
-| `similaridade_minima` | Aumentar = remove mais arestas "acidentais"       |
-| `alpha` / `beta`    | Balancear co-ocorrência vs. semântica               |
-| `n_clusters`        | Número de grupos temáticos esperados                |
+### Mudando o Tema
+Para analisar outro conjunto de documentos (como artigos em inglês sobre Visual Transformers), basta alterar as seguintes linhas:
 
+```python
+CONFIG = {
+    "tema": "Visual Transformers",          # ← Altere para o novo tema
+    "pasta_pdfs": "vits",                   # ← Altere para a nova pasta com os PDFs
+    "modelo_spacy": "en_core_web_sm",       # ← Altere o idioma do modelo
+    ...
+}
+```
+*Não se esqueça de baixar o novo modelo do spaCy via terminal caso mude o idioma (`python -m spacy download en_core_web_sm`).*
+
+### Ajustando o Comportamento do Grafo
+Podemos brincar com os hiperparâmetros no `config.py` também para ver diferentes resultados:
+
+| Parâmetro             | Efeito ao Ajustar                                   |
+|-----------------------|-----------------------------------------------------|
+| `w2v_vector_size`     | Vetores maiores trazem mais nuance semântica, mas exigem mais memória. |
+| `w2v_window`          | Janela maior captura um contexto textual mais amplo. |
+| `cooc_threshold`      | Aumentar o valor gera um grafo mais esparso e com menos ruído. |
+| `similaridade_minima` | Aumentar o valor remove de forma mais agressiva as arestas "acidentais". |
+| `alpha` / `beta`      | Balanceia o peso dado à co-ocorrência textual versus a semântica vetorial. |
+| `n_clusters`          | Define o número de grupos temáticos esperados no agrupamento (K-Means). |
