@@ -56,11 +56,6 @@ def _vetor_entidade(entidade: str, modelo: Word2Vec) -> np.ndarray | None:
         return None
     return np.mean(vetores, axis=0)
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# API pública
-# ──────────────────────────────────────────────────────────────────────────────
-
 def treinar_word2vec(textos_dict: dict, config: dict) -> tuple[Word2Vec, list]:
     """
     Treina o Word2Vec sobre o corpus completo.

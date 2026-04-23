@@ -1,9 +1,3 @@
-"""
-TCC Knowledge Graph Pipeline
-=============================
-Entry point. Edit CONFIG to change theme/parameters without touching the pipeline.
-"""
-
 import os
 import shutil
 from config import CONFIG
@@ -45,8 +39,8 @@ if __name__ == "__main__":
     # 6. Exportação
     exportar_visualizacoes(grafo, CONFIG)
 
-    # 7. 🧹 Pós-processamento: Mover arquivos para a pasta 'outputs'
-    print("\n📂 Movendo saídas para a pasta 'outputs/'...")
+    # 7. Pós-processamento: Mover arquivos para a pasta 'outputs'
+    print("\nMovendo saídas para a pasta 'outputs/'...")
     
     # Cria a pasta 'outputs' se ela não existir
     os.makedirs("outputs", exist_ok=True)

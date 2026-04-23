@@ -40,11 +40,6 @@ def _normalizar_pesos(grafo: nx.Graph) -> dict:
     max_peso = max(pesos.values()) if pesos else 1
     return {k: v / max_peso for k, v in pesos.items()}
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# API pública
-# ──────────────────────────────────────────────────────────────────────────────
-
 def enriquecer_grafo_com_vetores(
     grafo: nx.Graph,
     vetores: dict[str, np.ndarray],
