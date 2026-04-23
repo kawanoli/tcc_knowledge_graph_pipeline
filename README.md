@@ -22,6 +22,8 @@ tcc_knowledge_graph_pipeline/
     ├── enricher.py       ← [5] Combina co-ocorrência + similaridade cosseno
     ├── analyzer.py       ← [6a] Centralidade, clusters K-Means, relatório
     └── visualizer.py     ← [6b] PNG, GEXF (Gephi), HTML interativo
+├── tccs/                  ← Pasta onde colocaremos os trabalhos a se analisar
+├── outputs/               ← Pasta onde estarão os arquivos de saída do pipeline
 ```
 
 ---
